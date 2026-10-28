@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindForge AI - Concept & Mind Map Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        /* Grid Canvas Background */
+        .bg-grid {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        }
+        .light .bg-grid {
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        }
+        /* Animated SVG Edges */
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -20;
+            }
+        }
+        .edge-animated {
+            stroke-dasharray: 6 4;
+            animation: dash 1s linear infinite;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300 h-screen overflow-hidden flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="h-14 border-b border-slate-800 dark:border-slate-800 bg-slate-900/80 px-4 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i data-lucide="network" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent leading-tight">MindForge AI</h1>
+                <p class="text-[10px] text-slate-400">Academic Concept & Mind Map Synthesizer</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <!-- View Mode Switcher -->
+            <div class="bg-slate-800/80 p-1 rounded-lg border border-slate-700/60 flex space-x-1 text-xs">
+                <button id="btn-mode-mindmap" onclick="setViewMode('mindmap')" class="px-2.5 py-1 rounded-md font-medium transition-all bg-blue-600 text-white shadow-sm flex items-center gap-1.5">
+                    <i data-lucide="git-fork" class="w-3.5 h-3.5"></i> Mind Map
+                </button>
+                <button id="btn-mode-concept" onclick="setViewMode('concept')" class="px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Concept Map
+                </button>
+            </div>
+
+            <div class="h-4 w-px bg-slate-800 my-auto mx-1"></div>
+
+            <!-- Quiz / Flashcards Trigger -->
+            <button onclick="openStudyModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                <i data-lucide="brain-circuit" class="w-4 h-4 text-purple-400"></i>
+                <span>Study Hub</span>
+            </button>
+
+            <!-- API Key Settings -->
+            <button onclick="openSettingsModal()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="API Settings">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Toggle Theme">
+                <i data-lucide="sun" id="theme-icon-sun" class="w-4 h-4 hidden"></i>
+                <i data-lucide="moon" id="theme-icon-moon" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Export Menu -->
+            <div class="relative group">
+                <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-md transition flex items-center gap-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Export</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 ml-0.5"></i>
+                </button>
+                <div class="absolute right-0 top-full mt-1 w-44 bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-1 hidden group-hover:block z-50">
+                    <button onclick="exportPNG()" class="w-full px-3 py-2 text-left text-xs text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                        <i data-lucide="image" class="w-3.5 h-3.5 text-blue-400"></i> Export PNG Image
+                    </button>
+                    <button onclick="exportSVG()" class="w-full px-3 py-2 text-left text-xs text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                        <i data-lucide="code" class="w-3.5 h-3.5 text-emerald-400"></i> Export Vector SVG
+                    </button>
+                    <button onclick="exportPDFSummary()" class="w-full px-3 py-2 text-left text-xs text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-purple-400"></i> Print / Save PDF Notes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Sidebar: Inputs & Controls -->
+        <aside id="sidebar" class="w-96 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 transition-all duration-300 shrink-0">
+            <!-- Sidebar Header Tabs -->
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-blue-400"></i> Academic Content Input
+                </h2>
+                <button onclick="toggleSidebar()" class="text-slate-500 hover:text-slate-300 p-1">
+                    <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Input Body -->
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                
+                <!-- Sample Presets -->
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 mb-1.5 block">Quick Sample Presets:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="loadPreset('photosynthesis')" class="p-2 text-left text-xs bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition text-slate-300">
+                            🌿 Photosynthesis
+                        </button>
+                        <button onclick="loadPreset('quantum')" class="p-2 text-left text-xs bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition text-slate-300">
+                            ⚛️ Quantum Physics
+                        </button>
+                        <button onclick="loadPreset('history')" class="p-2 text-left text-xs bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition text-slate-300">
+                            📜 WWI & Diplomacy
+                        </button>
+                        <button onclick="loadPreset('neural')" class="p-2 text-left text-xs bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition text-slate-300">
+                            🧠 Deep Learning
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Textarea Input -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span>Paste Paper, Article, or Chapter</span>
+                        <button onclick="clearInput()" class="text-slate-500 hover:text-rose-400">Clear</button>
+                    </div>
+                    <textarea id="text-input" oninput="updateStats()" class="w-full h-56 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none resize-none font-sans" placeholder="Paste your academic text, lecture notes, or research abstract here..."></textarea>
+                </div>
+
+                <!-- Live Text Stats -->
+                <div class="grid grid-cols-3 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 text-center">
+                    <div>
+                        <div id="stat-words" class="text-sm font-bold text-slate-200">0</div>
+                        <div class="text-[10px] text-slate-500 uppercase">Words</div>
+                    </div>
+                    <div>
+                        <div id="stat-readtime" class="text-sm font-bold text-slate-200">0m</div>
+                        <div class="text-[10px] text-slate-500 uppercase">Read Time</div>
+                    </div>
+                    <div>
+                        <div id="stat-estnodes" class="text-sm font-bold text-blue-400">~0</div>
+                        <div class="text-[10px] text-slate-500 uppercase">Est. Nodes</div>
+                    </div>
+                </div>
+
+                <!-- Complexity / Detail Level Controls -->
+                <div class="space-y-2 pt-2">
+                    <label class="text-xs font-semibold text-slate-300 flex justify-between">
+                        <span>Granularity & Depth:</span>
+                        <span id="depth-label" class="text-blue-400 font-bold">Standard</span>
+                    </label>
+                    <input type="range" id="depth-slider" min="1" max="3" value="2" onchange="updateDepthLabel()" class="w-full accent-blue-500 cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Summary (5-7)</span>
+                        <span>Balanced (10-15)</span>
+                        <span>Detailed (20+)</span>
+                    </div>
+                </div>
+
+                <!-- Generate Action Button -->
+                <button id="btn-generate" onclick="generateMap()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center space-x-2 group">
+                    <i data-lucide="sparkles" class="w-4 h-4 group-hover:rotate-12 transition-transform"></i>
+                    <span>Generate Map with AI</span>
+                </button>
+
+                <!-- Status Banner -->
+                <div id="status-banner" class="hidden p-3 rounded-xl text-xs flex items-center gap-2 border">
+                    <!-- Dynamic status inserted by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sidebar Collapse Toggle Button (when hidden) -->
+        <button id="sidebar-open-btn" onclick="toggleSidebar()" class="hidden absolute left-4 top-4 z-20 p-2 bg-slate-900/90 border border-slate-700 text-slate-200 rounded-lg shadow-xl hover:bg-slate-800">
+            <i data-lucide="panel-left-open" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Interactive Map Canvas Area -->
+        <main class="flex-1 relative bg-slate-950 bg-grid overflow-hidden flex flex-col">
+            
+            <!-- Floating Canvas Toolbar -->
+            <div class="absolute top-4 left-4 z-10 flex items-center space-x-2">
+                <!-- Search Input in Canvas -->
+                <div class="relative w-64">
+                    <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500"></i>
+                    <input type="text" id="map-search" oninput="searchNodes()" placeholder="Search topics & keywords..." class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="h-6 w-px bg-slate-800"></div>
+
+                <!-- Physics Toggle -->
+                <button id="btn-physics" onclick="togglePhysics()" class="p-2 bg-slate-900/90 border border-slate-800 rounded-xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs" title="Toggle Auto-Force Physics Layout">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span class="hidden sm:inline">Physics</span>
+                </button>
+            </div>
+
+            <!-- Floating View Controls (Bottom Right) -->
+            <div class="absolute bottom-6 right-6 z-10 flex flex-col space-y-2">
+                <button onclick="zoomCanvas(1.2)" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-300 shadow-xl" title="Zoom In">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+                <button onclick="zoomCanvas(0.8)" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-300 shadow-xl" title="Zoom Out">
+                    <i data-lucide="minus" class="w-4 h-4"></i>
+                </button>
+                <button onclick="resetZoom()" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-300 shadow-xl" title="Recenter View">
+                    <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Legend Badge -->
+            <div class="absolute bottom-6 left-6 z-10 bg-slate-900/90 border border-slate-800/80 rounded-xl px-3 py-2 text-[11px] text-slate-400 flex items-center gap-3 shadow-lg">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Core Topic
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Subtopic
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Key Detail
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing">
+                <svg id="mindmap-svg" class="w-full h-full">
+                    <g id="viewport-group">
+                        <!-- Edges and Nodes drawn dynamically here -->
+                        <g id="edges-layer"></g>
+                        <g id="nodes-layer"></g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-md z-30 flex flex-col items-center justify-center space-y-4">
+                <div class="relative">
+                    <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                    <i data-lucide="sparkles" class="w-6 h-6 text-blue-400 absolute inset-0 m-auto animate-pulse"></i>
+                </div>
+                <div class="text-center space-y-1">
+                    <h3 id="loading-step" class="text-base font-semibold text-slate-200">Extracting key concepts...</h3>
+                    <p class="text-xs text-slate-400">Synthesizing relationships and node structure</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Side Inspector Drawer -->
+        <aside id="inspector-panel" class="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col z-10 hidden transition-all duration-300 shrink-0">
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span id="inspector-badge" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">Node Inspector</span>
+                </div>
+                <button onclick="closeInspector()" class="text-slate-500 hover:text-slate-300">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 p-5 overflow-y-auto space-y-4">
+                <div>
+                    <h2 id="inspector-title" class="text-lg font-bold text-slate-100 leading-tight">Quantum Entanglement</h2>
+                    <p id="inspector-category" class="text-xs text-slate-400 mt-1">Category: Physics Core</p>
+                </div>
+
+                <div class="h-px bg-slate-800"></div>
+
+                <div>
+                    <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Concept Summary</h4>
+                    <p id="inspector-summary" class="text-xs text-slate-300 leading-relaxed bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                        Select a node in the diagram to view its details, academic summary, and connection mapping.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Key Takeaways</h4>
+                    <ul id="inspector-bullets" class="space-y-1.5 text-xs text-slate-300">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0"></i>
+                            <span>Deep contextual relationship mapping</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Connected Topics</h4>
+                    <div id="inspector-links" class="flex flex-wrap gap-1.5">
+                        <!-- Linked topic tags -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- API Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="key" class="w-5 h-5 text-blue-400"></i>
+                    <h3 class="font-bold text-slate-100">API Settings</h3>
+                </div>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <label class="text-xs font-medium text-slate-300 block">Gemini API Key</label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Leave blank to use the built-in system key or instant offline smart fallback parser. Keys are stored locally in your browser.
+                </p>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="saveApiKey()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-xl transition">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Study Hub / Flashcards Modal -->
+    <div id="study-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="brain-circuit" class="w-5 h-5 text-purple-400"></i>
+                    <h3 class="font-bold text-slate-100">AI Study Flashcards & Quiz</h3>
+                </div>
+                <button onclick="closeStudyModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Flashcard Display Box -->
+            <div id="flashcard-container" class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 p-6 flex flex-col justify-center items-center text-center relative cursor-pointer min-h-[220px]" onclick="flipCard()">
+                <div id="card-badge" class="absolute top-4 left-4 text-[10px] uppercase font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">Question</div>
+                <div id="card-content" class="text-sm font-medium text-slate-200 px-4">
+                    Click "Generate Flashcards" to create self-testing study cards from your mind map!
+                </div>
+                <p class="absolute bottom-4 text-[10px] text-slate-500">Tap card to reveal answer</p>
+            </div>
+
+            <!-- Flashcard Nav Controls -->
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="prevCard()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl flex items-center gap-1">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i> Prev
+                </button>
+                <span id="card-counter" class="text-xs text-slate-400 font-medium">0 / 0</span>
+                <button onclick="nextCard()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl flex items-center gap-1">
+                    Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // --- Sample Academic Datasets ---
+        const PRESETS = {
+            photosynthesis: `Photosynthesis is a biological process used by plants, algae, and certain bacteria to convert light energy into chemical energy. This chemical energy is stored in carbohydrate molecules, such as sugars, which are synthesized from carbon dioxide and water. 
+The process occurs in two primary stages: Light-Dependent Reactions and the Calvin Cycle (Light-Independent Reactions). Light-dependent reactions take place within the thylakoid membranes of chloroplasts, utilizing chlorophyll pigments to absorb photons, splitting water molecules (photolysis) to release oxygen gas and generate ATP and NADPH. 
+The Calvin Cycle occurs in the stroma of chloroplasts, where the enzyme RuBisCO facilitates carbon fixation, incorporating CO2 into organic molecules to produce glucose. Key factors influencing photosynthesis rate include light intensity, carbon dioxide concentration, and ambient temperature.`,
+            
+            quantum: `Quantum Mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles. 
+Key principles include Wave-Particle Duality, which posits that light and matter exhibit behaviors of both waves and particles, demonstrated by Young's double-slit experiment. The Heisenberg Uncertainty Principle states that certain pairs of physical properties, such as position and momentum, cannot be simultaneously known with arbitrary precision. 
+Quantum Superposition allows particles to exist in multiple potential states simultaneously until measured, described by the Schrödinger Wave Equation. Quantum Entanglement describes phenomena where particles become interconnected such that the state of one instantaneously influences another, regardless of distance. Applications include quantum computing, semiconductors, and MRI scanners.`,
+            
+            history: `The outbreak of World War I in 1914 was triggered by complex systemic factors in Europe, encapsulated by the M-A-I-N causes: Militarism, Alliances, Imperialism, and Nationalism. 
+Imperial rivalries between European powers created friction in Africa and Asia. The intricate system of secret alliances, notably the Triple Entente (Britain, France, Russia) and the Triple Alliance (Germany, Austria-Hungary, Italy), meant that a localized conflict would escalate globally. 
+The immediate catalyst was the assassination of Archduke Franz Ferdinand of Austria in Sarajevo by Gavrilo Princip, a Serbian nationalist. Austria-Hungary declared war on Serbia, triggering alliance obligations. The war introduced trench warfare, chemical weapons, and tank combat, culminating in the 1919 Treaty of Versailles which reshaped global borders and established the League of Nations.`,
+            
+            neural: `Artificial Neural Networks (ANNs) are computational models inspired by biological neural networks in human brains. The fundamental building block is the Artificial Neuron (Perceptron), which receives inputs, applies weights and biases, and passes the result through an Activation Function (such as ReLU, Sigmoid, or Tanh) to yield an output. 
+Deep Learning involves architectures with multiple hidden layers. Training relies on Backpropagation, an algorithm that calculates gradients of the loss function with respect to weights using the chain rule, enabling Optimization via Stochastic Gradient Descent (SGD) or Adam. 
+Key architectures include Convolutional Neural Networks (CNNs) specialized for computer vision, Recurrent Neural Networks (RNNs) and LSTMs for sequential data, and Transformer models utilizing Self-Attention mechanisms for modern natural language processing.`
+        };
+
+        // --- State Management ---
+        let currentGraph = { nodes: [], edges: [] };
+        let viewMode = 'mindmap'; // 'mindmap' or 'concept'
+        let selectedNode = null;
+        let physicsEnabled = true;
+        let zoomScale = 1;
+        let panOffset = { x: 0, y: 0 };
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let draggedNode = null;
+        let animationFrameId = null;
+        let flashcards = [];
+        let currentCardIndex = 0;
+        let isCardFlipped = false;
+
+        // Custom API key stored locally
+        let userApiKey = localStorage.getItem('gemini_api_key') || '';
+
+        // --- Initialization ---
+        window.onload = () => {
+            lucide.createIcons();
+            document.getElementById('api-key-input').value = userApiKey;
+            loadPreset('photosynthesis');
+            setupCanvasEvents();
+            window.addEventListener('resize', handleResize);
+        };
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon-sun').classList.toggle('hidden', isDark);
+            document.getElementById('theme-icon-moon').classList.toggle('hidden', !isDark);
+            renderGraph();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const openBtn = document.getElementById('sidebar-open-btn');
+            sidebar.classList.toggle('hidden');
+            openBtn.classList.toggle('hidden');
+        }
+
+        function updateDepthLabel() {
+            const val = document.getElementById('depth-slider').value;
+            const labels = ['Summary', 'Standard', 'Detailed'];
+            document.getElementById('depth-label').innerText = labels[val - 1];
+            updateStats();
+        }
+
+        function updateStats() {
+            const text = document.getElementById('text-input').value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const readTime = Math.ceil(words / 200);
+            const depth = parseInt(document.getElementById('depth-slider').value);
+            const estNodes = words > 0 ? Math.min(Math.max(Math.floor(words / (40 / depth)), 5), 25) : 0;
+
+            document.getElementById('stat-words').innerText = words;
+            document.getElementById('stat-readtime').innerText = readTime + 'm';
+            document.getElementById('stat-estnodes').innerText = '~' + estNodes;
+        }
+
+        function loadPreset(key) {
+            document.getElementById('text-input').value = PRESETS[key];
+            updateStats();
+            generateMap();
+        }
+
+        function clearInput() {
+            document.getElementById('text-input').value = '';
+            updateStats();
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('btn-mode-mindmap').className = mode === 'mindmap' 
+                ? 'px-2.5 py-1 rounded-md font-medium transition-all bg-blue-600 text-white shadow-sm flex items-center gap-1.5'
+                : 'px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+            
+            document.getElementById('btn-mode-concept').className = mode === 'concept'
+                ? 'px-2.5 py-1 rounded-md font-medium transition-all bg-blue-600 text-white shadow-sm flex items-center gap-1.5'
+                : 'px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+
+            layoutNodes();
+            renderGraph();
+        }
+
+        // --- AI Synthesis Engine ---
+        async function generateMap() {
+            const text = document.getElementById('text-input').value.trim();
+            if (!text) {
+                showStatus('Please enter academic text to generate a map.', 'amber');
+                return;
+            }
+
+            showLoading(true, 'Analyzing academic text structure...');
+
+            const depth = parseInt(document.getElementById('depth-slider').value);
+            const targetCount = depth === 1 ? '6-8' : depth === 2 ? '10-14' : '16-22';
+
+            try {
+                const apiKey = userApiKey;
+                const prompt = `Analyze the following academic text and extract a hierarchical concept map with approximately ${targetCount} nodes.
+Return ONLY valid raw JSON with NO markdown formatting or backticks. 
+JSON Structure:
+{
+  "nodes": [
+    {
+      "id": "1",
+      "label": "Short Title",
+      "category": "core" | "subtopic" | "detail",
+      "summary": "1-2 sentence concise explanation of this concept",
+      "takeaways": ["Point 1", "Point 2"],
+      "importance": 1 to 3
+    }
+  ],
+  "edges": [
+    {
+      "from": "1",
+      "to": "2",
+      "label": "directional relationship verb or phrase (e.g. 'triggers', 'requires', 'produces')"
+    }
+  ]
+}
+
+Text content:
+${text}`;
+
+                let graphData = null;
+
+                // Try fetching from Gemini API
+                if (apiKey) {
+                    showLoading(true, 'Calling Gemini AI model...');
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (rawText) {
+                            const cleanedJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                            graphData = JSON.parse(cleanedJson);
+                        }
+                    }
+                }
+
+                // Smart Fallback Heuristic Generator if no key or API fail
+                if (!graphData) {
+                    showLoading(true, 'Using smart local NLP extraction...');
+                    await new Promise(r => setTimeout(r, 600)); // smooth experience
+                    graphData = generateFallbackGraph(text, depth);
+                }
+
+                currentGraph = graphData;
+                generateFlashcardsFromMap();
+                layoutNodes();
+                resetZoom();
+                renderGraph();
+                showStatus(`Successfully generated ${currentGraph.nodes.length} concepts and ${currentGraph.edges.length} connections.`, 'emerald');
+
+            } catch (err) {
+                console.warn('AI Parsing fallback triggered:', err);
+                currentGraph = generateFallbackGraph(text, depth);
+                generateFlashcardsFromMap();
+                layoutNodes();
+                resetZoom();
+                renderGraph();
+                showStatus('Generated map using intelligent local parser.', 'blue');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // --- Smart Fallback NLP Heuristic Generator ---
+        function generateFallbackGraph(text, depth) {
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            const words = text.split(/\s+/);
+            const mainTopic = words.slice(0, 3).join(' ').replace(/[^\w\s]/gi, '') || 'Main Subject';
+
+            const nodes = [
+                { id: '1', label: mainTopic, category: 'core', summary: sentences[0] || 'Central topic of study.', takeaways: ['Primary subject under analysis'], importance: 3 }
+            ];
+            const edges = [];
+
+            const nodeCountTarget = depth === 1 ? 6 : depth === 2 ? 11 : 16;
+            
+            // Extract capital phrase candidates
+            const phrases = text.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g) || [];
+            const uniquePhrases = [...new Set(phrases)].filter(p => p.length > 3 && p.toLowerCase() !== mainTopic.toLowerCase());
+
+            let idCounter = 2;
+            for (let i = 0; i < Math.min(uniquePhrases.length, nodeCountTarget - 1); i++) {
+                const label = uniquePhrases[i];
+                const cat = i < 4 ? 'subtopic' : 'detail';
+                const parentId = cat === 'subtopic' ? '1' : String(2 + (i % 4));
+
+                nodes.push({
+                    id: String(idCounter),
+                    label: label,
+                    category: cat,
+                    summary: sentences[i % sentences.length].trim(),
+                    takeaways: [`Key aspect related to ${label}`],
+                    importance: cat === 'subtopic' ? 2 : 1
+                });
+
+                edges.push({
+                    from: parentId,
+                    to: String(idCounter),
+                    label: cat === 'subtopic' ? 'includes' : 'leads to'
+                });
+
+                idCounter++;
+            }
+
+            return { nodes, edges };
+        }
+
+        // --- Graph Layout & Physics Engine ---
+        function layoutNodes() {
+            const svg = document.getElementById('mindmap-svg');
+            const width = svg.clientWidth || 800;
+            const height = svg.clientHeight || 600;
+            const cx = width / 2;
+            const cy = height / 2;
+
+            if (currentGraph.nodes.length === 0) return;
+
+            if (viewMode === 'mindmap') {
+                // Radial Tree Layout
+                const root = currentGraph.nodes.find(n => n.category === 'core') || currentGraph.nodes[0];
+                root.x = cx;
+                root.y = cy;
+
+                const subtopics = currentGraph.nodes.filter(n => n.id !== root.id && n.category === 'subtopic');
+                const details = currentGraph.nodes.filter(n => n.category === 'detail');
+
+                const r1 = Math.min(width, height) * 0.25;
+                subtopics.forEach((node, i) => {
+                    const angle = (i / Math.max(subtopics.length, 1)) * 2 * Math.PI;
+                    node.x = cx + r1 * Math.cos(angle);
+                    node.y = cy + r1 * Math.sin(angle);
+                });
+
+                const r2 = Math.min(width, height) * 0.4;
+                details.forEach((node, i) => {
+                    const angle = (i / Math.max(details.length, 1)) * 2 * Math.PI + 0.2;
+                    node.x = cx + r2 * Math.cos(angle);
+                    node.y = cy + r2 * Math.sin(angle);
+                });
+
+            } else {
+                // Concept Map Network Physics Initializer
+                currentGraph.nodes.forEach((node, i) => {
+                    const angle = (i / currentGraph.nodes.length) * 2 * Math.PI;
+                    const r = 180 + Math.random() * 80;
+                    node.x = cx + r * Math.cos(angle);
+                    node.y = cy + r * Math.sin(angle);
+                    node.vx = 0;
+                    node.vy = 0;
+                });
+            }
+
+            if (physicsEnabled) startPhysics();
+        }
+
+        function startPhysics() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            let iterations = 0;
+            function step() {
+                if (!physicsEnabled || iterations > 200) return;
+
+                const nodes = currentGraph.nodes;
+                const edges = currentGraph.edges;
+                const k = 120; // optimal distance
+
+                // Repulsion between all nodes
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        let dx = nodes[j].x - nodes[i].x;
+                        let dy = nodes[j].y - nodes[i].y;
+                        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        if (dist < 250) {
+                            let force = (k * k) / dist;
+                            let fx = (dx / dist) * force * 0.05;
+                            let fy = (dy / dist) * force * 0.05;
+                            if (nodes[i] !== draggedNode) { nodes[i].x -= fx; nodes[i].y -= fy; }
+                            if (nodes[j] !== draggedNode) { nodes[j].x += fx; nodes[j].y += fy; }
+                        }
+                    }
+                }
+
+                // Attraction along edges
+                edges.forEach(edge => {
+                    const source = nodes.find(n => n.id === edge.from);
+                    const target = nodes.find(n => n.id === edge.to);
+                    if (source && target) {
+                        let dx = target.x - source.x;
+                        let dy = target.y - source.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        let force = (dist - k) * 0.04;
+                        let fx = (dx / dist) * force;
+                        let fy = (dy / dist) * force;
+                        if (source !== draggedNode) { source.x += fx; source.y += fy; }
+                        if (target !== draggedNode) { target.x -= fx; target.y -= fy; }
+                    }
+                });
+
+                renderGraph();
+                iterations++;
+                animationFrameId = requestAnimationFrame(step);
+            }
+            step();
+        }
+
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            document.getElementById('btn-physics').classList.toggle('bg-blue-600/30', physicsEnabled);
+            if (physicsEnabled) startPhysics();
+        }
+
+        // --- Render SVG Diagram ---
+        function renderGraph() {
+            const viewportGroup = document.getElementById('viewport-group');
+            const edgesLayer = document.getElementById('edges-layer');
+            const nodesLayer = document.getElementById('nodes-layer');
+
+            // Apply Transform Zoom/Pan
+            viewportGroup.setAttribute('transform', `translate(${panOffset.x}, ${panOffset.y}) scale(${zoomScale})`);
+
+            edgesLayer.innerHTML = '';
+            nodesLayer.innerHTML = '';
+
+            const isDark = document.documentElement.classList.contains('dark');
+
+            // Render Edges
+            currentGraph.edges.forEach(edge => {
+                const source = currentGraph.nodes.find(n => n.id === edge.from);
+                const target = currentGraph.nodes.find(n => n.id === edge.to);
+                if (!source || !target) return;
+
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+                // Line path
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", source.x);
+                line.setAttribute("y1", source.y);
+                line.setAttribute("x2", target.x);
+                line.setAttribute("y2", target.y);
+                line.setAttribute("stroke", isDark ? "rgba(148, 163, 184, 0.3)" : "rgba(100, 116, 139, 0.4)");
+                line.setAttribute("stroke-width", "2");
+
+                if (viewMode === 'concept') {
+                    line.setAttribute("marker-end", "url(#arrowhead)");
+                }
+
+                g.appendChild(line);
+
+                // Edge Label (Concept Map)
+                if (viewMode === 'concept' && edge.label) {
+                    const midX = (source.x + target.x) / 2;
+                    const midY = (source.y + target.y) / 2;
+
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", midX);
+                    text.setAttribute("y", midY - 4);
+                    text.setAttribute("fill", isDark ? "#94a3b8" : "#64748b");
+                    text.setAttribute("font-size", "9");
+                    text.setAttribute("font-weight", "500");
+                    text.setAttribute("text-anchor", "middle");
+                    text.textContent = edge.label;
+                    g.appendChild(text);
+                }
+
+                edgesLayer.appendChild(g);
+            });
+
+            // Arrowhead Definition Marker
+            let defs = viewportGroup.querySelector("defs");
+            if (!defs) {
+                defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+                viewportGroup.prepend(defs);
+            }
+            defs.innerHTML = `
+                <marker id="arrowhead" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="${isDark ? '#64748b' : '#94a3b8'}"/>
+                </marker>
+            `;
+
+            // Render Nodes
+            currentGraph.nodes.forEach(node => {
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+                g.setAttribute("class", "cursor-pointer group");
+
+                // Category styling
+                let fillColor = "#3b82f6"; // core
+                let radius = 26;
+                if (node.category === 'subtopic') { fillColor = "#6366f1"; radius = 22; }
+                if (node.category === 'detail') { fillColor = "#10b981"; radius = 18; }
+
+                const isSelected = selectedNode && selectedNode.id === node.id;
+
+                // Outer Halo Glow
+                const halo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                halo.setAttribute("r", radius + (isSelected ? 8 : 4));
+                halo.setAttribute("fill", fillColor);
+                halo.setAttribute("opacity", isSelected ? "0.4" : "0.15");
+                g.appendChild(halo);
+
+                // Main Circle Node
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("r", radius);
+                circle.setAttribute("fill", isDark ? "#0f172a" : "#ffffff");
+                circle.setAttribute("stroke", fillColor);
+                circle.setAttribute("stroke-width", isSelected ? "3" : "2");
+                g.appendChild(circle);
+
+                // Center Icon / Dot
+                const innerDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                innerDot.setAttribute("r", "5");
+                innerDot.setAttribute("fill", fillColor);
+                g.appendChild(innerDot);
+
+                // Label Text
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("y", radius + 14);
+                text.setAttribute("fill", isDark ? "#f1f5f9" : "#0f172a");
+                text.setAttribute("font-size", "11");
+                text.setAttribute("font-weight", "600");
+                text.setAttribute("text-anchor", "middle");
+                text.textContent = node.label;
+                g.appendChild(text);
+
+                // Node Click & Drag Listeners
+                g.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectNode(node);
+                });
+
+                g.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    draggedNode = node;
+                });
+
+                nodesLayer.appendChild(g);
+            });
+        }
+
+        // --- Interactivity & Inspector ---
+        function selectNode(node) {
+            selectedNode = node;
+            const inspector = document.getElementById('inspector-panel');
+            inspector.classList.remove('hidden');
+
+            document.getElementById('inspector-title').innerText = node.label;
+            document.getElementById('inspector-category').innerText = `Category: ${node.category.toUpperCase()}`;
+            document.getElementById('inspector-summary').innerText = node.summary || 'No detailed summary available.';
+
+            const bullets = document.getElementById('inspector-bullets');
+            bullets.innerHTML = (node.takeaways || []).map(t => `
+                <li class="flex items-start gap-2">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0"></i>
+                    <span>${t}</span>
+                </li>
+            `).join('');
+
+            // Connected topic badges
+            const connectedEdges = currentGraph.edges.filter(e => e.from === node.id || e.to === node.id);
+            const connectedIds = connectedEdges.map(e => e.from === node.id ? e.to : e.from);
+            const connectedNodes = currentGraph.nodes.filter(n => connectedIds.includes(n.id));
+
+            const links = document.getElementById('inspector-links');
+            links.innerHTML = connectedNodes.map(cn => `
+                <button onclick="selectNodeById('${cn.id}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 rounded-md border border-slate-700">
+                    ${cn.label}
+                </button>
+            `).join('');
+
+            lucide.createIcons();
+            renderGraph();
+        }
+
+        function selectNodeById(id) {
+            const target = currentGraph.nodes.find(n => n.id === id);
+            if (target) selectNode(target);
+        }
+
+        function closeInspector() {
+            selectedNode = null;
+            document.getElementById('inspector-panel').classList.add('hidden');
+            renderGraph();
+        }
+
+        function searchNodes() {
+            const query = document.getElementById('map-search').value.toLowerCase().trim();
+            if (!query) {
+                selectedNode = null;
+                renderGraph();
+                return;
+            }
+            const match = currentGraph.nodes.find(n => n.label.toLowerCase().includes(query));
+            if (match) {
+                selectNode(match);
+            }
+        }
+
+        // --- Canvas Events (Zoom/Pan & Dragging) ---
+        function setupCanvasEvents() {
+            const container = document.getElementById('canvas-container');
+
+            container.addEventListener('mousedown', (e) => {
+                if (!draggedNode) {
+                    isDragging = true;
+                    dragStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (draggedNode) {
+                    const rect = container.getBoundingClientRect();
+                    draggedNode.x = (e.clientX - rect.left - panOffset.x) / zoomScale;
+                    draggedNode.y = (e.clientY - rect.top - panOffset.y) / zoomScale;
+                    renderGraph();
+                } else if (isDragging) {
+                    panOffset.x = e.clientX - dragStart.x;
+                    panOffset.y = e.clientY - dragStart.y;
+                    renderGraph();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                draggedNode = null;
+            });
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                zoomCanvas(zoomFactor);
+            }, { passive: false });
+        }
+
+        function zoomCanvas(factor) {
+            zoomScale = Math.min(Math.max(zoomScale * factor, 0.4), 3.0);
+            renderGraph();
+        }
+
+        function resetZoom() {
+            zoomScale = 1;
+            panOffset = { x: 0, y: 0 };
+            renderGraph();
+        }
+
+        function handleResize() {
+            renderGraph();
+        }
+
+        // --- Study Hub / Flashcards ---
+        function generateFlashcardsFromMap() {
+            flashcards = currentGraph.nodes.map(node => ({
+                question: `What is the core definition/significance of "${node.label}"?`,
+                answer: node.summary || `It is a ${node.category} concept in this academic topic.`
+            }));
+            currentCardIndex = 0;
+            isCardFlipped = false;
+            updateCardDisplay();
+        }
+
+        function openStudyModal() {
+            document.getElementById('study-modal').classList.remove('hidden');
+            updateCardDisplay();
+        }
+
+        function closeStudyModal() {
+            document.getElementById('study-modal').classList.add('hidden');
+        }
+
+        function flipCard() {
+            isCardFlipped = !isCardFlipped;
+            updateCardDisplay();
+        }
+
+        function updateCardDisplay() {
+            if (flashcards.length === 0) return;
+            const card = flashcards[currentCardIndex];
+            const content = document.getElementById('card-content');
+            const badge = document.getElementById('card-badge');
+
+            if (isCardFlipped) {
+                content.innerText = card.answer;
+                badge.innerText = 'Answer';
+                badge.className = 'absolute top-4 left-4 text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20';
+            } else {
+                content.innerText = card.question;
+                badge.innerText = 'Question';
+                badge.className = 'absolute top-4 left-4 text-[10px] uppercase font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20';
+            }
+
+            document.getElementById('card-counter').innerText = `${currentCardIndex + 1} / ${flashcards.length}`;
+        }
+
+        function nextCard() {
+            if (currentCardIndex < flashcards.length - 1) {
+                currentCardIndex++;
+                isCardFlipped = false;
+                updateCardDisplay();
+            }
+        }
+
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                isCardFlipped = false;
+                updateCardDisplay();
+            }
+        }
+
+        // --- API Settings Modal ---
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            userApiKey = key;
+            localStorage.setItem('gemini_api_key', key);
+            closeSettingsModal();
+            showStatus('API key saved successfully!', 'emerald');
+        }
+
+        // --- UI Utilities ---
+        function showLoading(show, message = 'Processing...') {
+            const overlay = document.getElementById('loading-overlay');
+            const stepText = document.getElementById('loading-step');
+            if (show) {
+                stepText.innerText = message;
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function showStatus(msg, type = 'blue') {
+            const banner = document.getElementById('status-banner');
+            banner.classList.remove('hidden', 'bg-blue-500/10', 'border-blue-500/20', 'text-blue-400', 'bg-emerald-500/10', 'border-emerald-500/20', 'text-emerald-400', 'bg-amber-500/10', 'border-amber-500/20', 'text-amber-400');
+            
+            if (type === 'emerald') {
+                banner.classList.add('bg-emerald-500/10', 'border-emerald-500/20', 'text-emerald-400');
+            } else if (type === 'amber') {
+                banner.classList.add('bg-amber-500/10', 'border-amber-500/20', 'text-amber-400');
+            } else {
+                banner.classList.add('bg-blue-500/10', 'border-blue-500/20', 'text-blue-400');
+            }
+            
+            banner.innerHTML = `<i data-lucide="info" class="w-4 h-4 shrink-0"></i><span>${msg}</span>`;
+            lucide.createIcons();
+            setTimeout(() => banner.classList.add('hidden'), 5000);
+        }
+
+        // --- Export Functions ---
+        function exportSVG() {
+            const svg = document.getElementById('mindmap-svg').cloneNode(true);
+            const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mindforge-concept-map.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportPNG() {
+            const svg = document.getElementById('mindmap-svg');
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = svg.clientWidth * 2;
+            canvas.height = svg.clientHeight * 2;
+
+            const img = new Image();
+            img.onload = () => {
+                ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = 'mindforge-concept-map.png';
+                a.click();
+            };
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        }
+
+        function exportPDFSummary() {
+            const printWindow = window.open('', '_blank');
+            const summaryHtml = `
+                <html>
+                <head>
+                    <title>Academic Notes Summary</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+                        h1 { color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+                        .concept-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+                        .concept-title { font-weight: bold; font-size: 16px; color: #0f172a; }
+                        .category { text-transform: uppercase; font-size: 10px; color: #64748b; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Academic Concept Summary & Notes</h1>
+                    ${currentGraph.nodes.map(n => `
+                        <div class="concept-card">
+                            <div class="category">${n.category}</div>
+                            <div class="concept-title">${n.label}</div>
+                            <p>${n.summary || ''}</p>
+                            <ul>
+                                ${(n.takeaways || []).map(t => `<li>${t}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('')}
+                </body>
+                </html>
+            `;
+            printWindow.document.write(summaryHtml);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+</body>
+</html>
