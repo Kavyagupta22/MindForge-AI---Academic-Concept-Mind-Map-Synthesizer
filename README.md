@@ -1,0 +1,1 @@
+# MindForge-AI---Academic-Concept-Mind-Map-Synthesizer
